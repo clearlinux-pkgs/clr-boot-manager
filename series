@@ -1,3 +1,4 @@
 0001-Ease-performance-impact-of-kernel-booted-detection.patch
 0002-Motd-updating-script-for-clearlinux.patch
-0003-Add-Clear-Linux-kvm-hyperv-to-native-switch.patch
+0003-Migrate-old-LTS-kernels-to-ltsprev.patch
+backport-Prevent-segfault-in-boot_manager_set_default_kernel.patch

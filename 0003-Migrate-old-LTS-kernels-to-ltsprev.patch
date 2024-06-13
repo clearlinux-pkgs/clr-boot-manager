@@ -1,0 +1,54 @@
+From 699d6f1d58db78799f57bf4ce5963d5379b365ab Mon Sep 17 00:00:00 2001
+From: "Brett T. Warden" <brett.t.warden@intel.com>
+Date: Wed, 12 Jun 2024 15:24:55 -0700
+Subject: [PATCH] Migrate old LTS kernels to ltsprev
+
+We support only the current and one previous LTS kernel. Add logic to
+detect if an older LTS kernel is in use, and if so, switch to ltsprev.
+---
+ src/bootman/update.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/src/bootman/update.c b/src/bootman/update.c
+index b9c06bb1ba83..b0e54d8d8950 100644
+--- a/src/bootman/update.c
++++ b/src/bootman/update.c
+@@ -287,7 +287,11 @@ static bool boot_manager_update_native(BootManager *self)
+                                 }
+                                 LOG_INFO("update_native: not-running: %s", tk->source.path);
+                                 /* Preserve tip */
+-                                if (tip && tk == tip) {
++                                if (tip && tk == tip &&
++                                    /* Prepare to migrate deprecated kernels */
++                                    strncmp(kernel_type, "lts201", 6) != 0 &&
++                                    strcmp( kernel_type, "lts2020"  ) != 0 &&
++                                    strcmp( kernel_type, "lts2021"  ) != 0) {
+                                         LOG_DEBUG("update_native: Skipping default-%s: %s",
+                                                   kernel_type,
+                                                   tk->source.path);
+@@ -329,6 +333,22 @@ static bool boot_manager_update_native(BootManager *self)
+         }
+ 
+         if (new_default) {
++                Kernel *migration_kernel = NULL;
++
++                if (new_default &&
++                    strncmp(new_default->meta.ktype, "lts201", 6) == 0 ||
++                    strcmp( new_default->meta.ktype, "lts2020"  ) == 0 ||
++                    strcmp( new_default->meta.ktype, "lts2021"  ) == 0) {
++                        /* Migrate old LTS kernels to ltsprev */
++                        migration_kernel =
++                                boot_manager_get_default_for_type(self, kernels, "ltsprev");
++                }
++
++                /* Only migrate if we have a migration target */
++                if (migration_kernel) {
++                        new_default = migration_kernel;
++                }
++
+                 if (!boot_manager_set_default_kernel(self, new_default)) {
+                         LOG_ERROR("Failed to set the default kernel to: %s",
+                                   new_default ? new_default->source.path : "<timeout mode>");
+-- 
+2.45.2
+

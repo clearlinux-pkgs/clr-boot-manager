@@ -1,0 +1,27 @@
+From 7ceb51f0c65299136b09218e3df4781fcc710bd3 Mon Sep 17 00:00:00 2001
+From: "Brett T. Warden" <brett.t.warden@intel.com>
+Date: Tue, 11 Jun 2024 17:09:54 -0700
+Subject: [PATCH] Prevent segfault in boot_manager_set_default_kernel
+
+If boot_manager_set_default_kernel() is called with a NULL kernel
+target, explicitly return false.
+---
+ src/bootman/bootman.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/bootman/bootman.c b/src/bootman/bootman.c
+index a35381abb2ee..92d651c5ef14 100644
+--- a/src/bootman/bootman.c
++++ b/src/bootman/bootman.c
+@@ -407,6 +407,8 @@ bool boot_manager_set_default_kernel(BootManager *self, const Kernel *kernel)
+         CHECK_DBG_RET_VAL(!cbm_is_sysconfig_sane(self->sysconfig), false,
+                           "Sysconfig is not sane");
+ 
++        CHECK_ERR_RET_VAL(!kernel, false, "No kernel specified, bailing");
++
+         /* Grab the available kernels */
+         kernels = boot_manager_get_kernels(self);
+         CHECK_ERR_RET_VAL(!kernels || kernels->len == 0, false,
+-- 
+2.45.2
+
